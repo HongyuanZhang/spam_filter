@@ -76,6 +76,16 @@ def read_email(email_path):
         words=process_node(root)
         return words
 
+def read_labels(label_path):
+    with open(label_path, 'r') as f:
+        labels = f.readlines()
+        labels = [label.partition(' ')[0] for label in labels]
+        for i in range(len(labels)):
+            if labels[i] == 'spam':
+                labels[i] = 1
+            else:
+                labels[i] = 0
+        return labels
 
 if __name__ == '__main__':
     words=read_email('trec07p/data/inmail.1')
