@@ -70,7 +70,7 @@ def read_email(email_path):
     traverse the multipart email until the end like a tree
     returns an array of words inside the email 
     '''
-    with open(email_path, 'r') as f:
+    with open(email_path, 'r', encoding="utf8", errors='ignore') as f:
         raw=f.read()
         root=email.message_from_string(raw)
         words=process_node(root)
