@@ -2,6 +2,12 @@ import email
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+from sklearn.model_selection import KFold
+from sklearn.metrics import confusion_matrix
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+import numpy as np
+
 
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
@@ -85,7 +91,41 @@ def read_labels(label_path):
                 labels[i] = 1
             else:
                 labels[i] = 0
+        labels=np.asarray(labels)
         return labels
+
+def train_and_evaluate_model(model,size):
+    email_path='trec07p/data/inmail.'
+    label_path='trec07p/full/index'
+    count_vect = CountVectorizer()
+    emails = []
+    for i in range(1,size+1):
+        emails.append(' '.join(read_email(email_path+str(i))))
+    raw_counts = count_vect.fit_transform(emails)
+    transformer = TfidfTransformer().fit(raw_counts)
+    tf_idf = transformer.transform(raw_counts)
+    labels = read_labels(label_path)[:size]
+    classes=np.unique(labels)
+    kf = KFold(n_splits=10)
+    kf.get_n_splits(tf_idf)
+    acc_total=0.0
+    rec_total=0.0
+    for train_index, test_index in kf.split(tf_idf):
+        X_train, X_test = tf_idf[train_index], tf_idf[test_index]
+        y_train, y_test = labels[train_index], labels[test_index]
+        model.fit(X_train,y_train)
+        predicted = model.predict(X_test)
+        cm=confusion_matrix(y_test,predicted,labels=classes)
+        tp=cm[0][0]
+        fp=cm[1][0]
+        fn=cm[0][1]
+        acc=tp/(tp+fp)
+        rec=tp/(tp+fn)
+        acc_total+=acc
+        rec_total+=rec
+    print("Accuracy:",acc_total/10)
+    print("Recall:",rec_total/10)
+
 
 if __name__ == '__main__':
     words=read_email('trec07p/data/inmail.1')
